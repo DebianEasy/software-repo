@@ -1,0 +1,31 @@
+#!/usr/bin/bash
+DIR=`dirname ${BASH_SOURCE[0]}`
+
+function blesh_expect(){
+expect <(cat << EOF
+spawn "bash"
+send "source $DIR/../share/ble.sh\r"
+interact
+EOF
+)
+}
+
+function blesh_expect_clear(){
+expect <(cat << EOF
+spawn "bash"
+send "source $DIR/../share/ble.sh\r"
+send "clear\r"
+interact
+EOF
+)
+}
+
+if [[ $1 == '--clear' ]]
+then
+	blesh_expect_clear
+elif [[ $1 == '-c' ]]
+then
+	blesh_expect_clear
+else
+	blesh_expect
+fi

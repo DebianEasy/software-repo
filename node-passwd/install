@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+cp ./node-passwd /usr/local/bin/
+chmod 6755 /usr/local/bin/node-passwd

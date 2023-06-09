@@ -1,0 +1,17 @@
+#!/bin/bash
+Version=1.0
+mkdir deb
+mkdir -p firmware-b43/DEBIAN
+mkdir -p firmware-b43/usr/lib/firmware
+rm -rf firmware-b43/usr/lib/firmware/*
+cp -r b43 firmware-b43/usr/lib/firmware/
+cat > ./firmware-b43/DEBIAN/control << EOF
+Package: firmware-b43
+Version: $Version
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: Linux extra firmware for b43
+EOF
+dpkg -b firmware-b43 deb/firmware-b43_"$Version"_amd64.deb
+rm -rf firmware-b43

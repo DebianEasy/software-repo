@@ -1,0 +1,13 @@
+#!/bin/bash
+mkdir -p deb
+rm deb/*
+Version=`cat ./pack/usr/sbin/wall2notify|grep 'Version='|awk -F '=' '{print $2}'`
+cat >./pack/DEBIAN/control << EOF
+Package: wall2notify
+Version: $Version
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: send wall message to notify-send
+EOF
+dpkg -b ./pack ./deb/wall2notify_"$Version"_all.deb

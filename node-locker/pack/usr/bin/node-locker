@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+NODELK_TITLE="node screen locker"
+NODELK_TEXT="Please input your password to unlock the screen."
+PathRun=/run/node-lock
+PathEtc=/etc/node-lock
+CMD_PASSWD_DETECT=node-passwd
+Version=0.1
+RefreshTime=0.5
+
+function daemon_term(){
+	jobs -l
+	for pidline in `jobs -p`
+	do
+		kill $pidline
+	done
+	unset pidline
+	rm -rf "$RUNDIR"/node-locker/"$DISPLAY"
+	exit 0
+}
+
+function window_max(){
+	while [ $Lock_Flag -eq 1 ]
+	do
+        while [[ -z $NODELK_WINDOWID ]]
+        do
+            NODELK_WINDOWID=`xdotool search --name "$NODELK_TITLE"`
+		done
+		wmctrl -F -a "$NODELK_TITLE" -b add,above,fullscreen
+		NODELK_WINDOWID=`xdotool search --name "$NODELK_TITLE"`
+		#echo $NODELK_WINDOWID
+		xdotool windowactivate $NODELK_WINDOWID &>/dev/null
+		sleep $RefreshTime
+	done
+}
+
+
+function gxmessage_passwd(){
+	passwd=$(gxmessage -entry -borderless -ontop -noescape -geometry "$width"x"$height" -title "$NODELK_TITLE" "$NODELK_TEXT")
+}
+
+function yad_passwd(){
+	passwd=$(yad --entry --hide-text --title="$NODELK_TITLE"  --text="$NODELK_TEXT" --entry-label=Password --button=ok --height=$height --width=$width --on-top --fullscreen )
+}
+
+function zenity_passwd(){
+	passwd=$(zenity --entry --hide-text --title="$NODELK_TITLE"  --text="$NODELK_TEXT" --height=$height --width=$width )
+}
+
+function lock_run(){
+	while [ $Lock_Flag -eq 1 ]
+	do
+		"$Mode"_passwd
+		if [[ ! -z $passwd ]]
+		then
+			$CMD_PASSWD_DETECT $user $passwd
+			Lock_Flag=$?
+			if [ $Lock_Flag -ne 0 ]
+			then
+				NODELK_TEXT="Password not correct. Please input your password again."
+			else
+				NODELK_TEXT="Please input your password to unlock the screen."
+			fi
+		fi
+    done
+}
+
+function cleanflag(){
+	[ -e "$RUNDIR"/node-locker/"$DISPLAY" ] && rm -rf "$RUNDIR"/node-locker/"$DISPLAY"
+}
+
+function echohelp(){
+	echo "NODE screen locker for single user"
+	echo "Do not support wayland"
+	echo
+	echo "Version: $Version"
+	echo
+	echo "Usage: $0 [Options]"
+	echo
+	echo "Options:"
+	echo "	-z | --zenity		Lock screen on current dsiplay with zenity"
+	echo "	-g | --gxmessage	Lock screen on current dsiplay with gxmessage"
+	echo "	-y | --yad		Lock screen on current dsiplay with yad"
+	echo "	-h | --help		output this help page"
+	echo "	-c | --clean		clean locker flag, use it if screen locker not works"
+	echo
+	echo "Variables:"
+	echo " These variables can be set in $PathEtc/conf"
+	echo "	Mode			default GUI text program to use, can be set as 'zenity', 'yad' and 'gxmessage', 'yad' as default"
+	echo "	RefreshTime		refresh time for screen-locking GUI window, 0.5 as default"
+	exit 1
+}
+
+user=${user:-`whoami`}
+uid=${uid:-`id -u $user`}
+RUNDIR='/run/user/'"$uid"
+[ -f "$RUNDIR"/node-locker ] && rm -rf "$RUNDIR"/node-locker
+[ -d "$RUNDIR"/node-locker ] || mkdir -p "$RUNDIR"/node-locker
+Mode=yad
+[ -e $PathEtc/conf ] && source $PathEtc/conf
+[ -z $DISPLAY ] && {
+	echo $DISPLAY
+	echo "DISPLAY not found"
+	exit 1
+} 
+for line in $@
+do
+	[[ $line == '-z' ]] && Mode=zenity
+	[[ $line == '-g' ]] && Mode=gxmessage
+	[[ $line == '-y' ]] && Mode=yad
+	[[ $line == '--zenity' ]] && Mode=zenity
+	[[ $line == '--gxmessage' ]] && Mode=gxmessage
+	[[ $line == '--yad' ]] && Mode=yad
+	[[ $line == '-h' ]] && echohelp
+	[[ $line == '--help' ]] && echohelp
+	[[ $line == '-c' ]] && cleanflag
+	[[ $line == '--clean' ]] && cleanflag
+done
+if ( ! which $CMD_PASSWD_DETECT >/dev/null)
+then
+	echo "$CMD_PASSWD_DETECT not found"
+	exit 1
+fi
+if [ -e "$RUNDIR"/node-locker/"$DISPLAY" ]
+then
+	echo "Screen has been locked"
+	exit 1
+else
+	echo $$ > "$RUNDIR"/node-locker/"$DISPLAY"
+fi
+trap "daemon_term" SIGINT SIGTERM
+width=`xdotool getdisplaygeometry |awk -F' ' '{print $1}'`
+height=`xdotool getdisplaygeometry |awk -F' ' '{print $2}'`
+Lock_Flag=1
+window_max &
+lock_run
+daemon_term

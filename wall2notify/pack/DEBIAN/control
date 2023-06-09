@@ -1,0 +1,6 @@
+Package: wall2notify
+Version: 0.6.1
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: send wall message to notify-send

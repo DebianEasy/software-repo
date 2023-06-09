@@ -1,0 +1,7 @@
+Package: firmware-edge-installer
+Version: 0.2
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Depends: git
+Description: installer from edge firmware from kernel.org

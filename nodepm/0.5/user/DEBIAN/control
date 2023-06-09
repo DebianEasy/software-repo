@@ -1,0 +1,7 @@
+Package: nodepm-user
+Version: 0.2.1
+Architecture: all
+Priority: optional
+Depends: nodepm
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: nodepm non-root program

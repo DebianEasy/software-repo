@@ -1,0 +1,14 @@
+#!/bin/bash
+Version=0.2
+mkdir -p deb
+rm deb/*
+cat >./pack/DEBIAN/control << EOF
+Package: firmware-edge-installer
+Version: $Version
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Depends: git
+Description: installer from edge firmware from kernel.org
+EOF
+dpkg -b ./pack deb/firmware-edge-installer_"$Version"_all.deb

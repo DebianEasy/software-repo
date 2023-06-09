@@ -1,0 +1,17 @@
+#!/bin/bash
+mkdir -p deb
+rm deb/*
+Version=`cat nodepm-tray.py |grep 'version='|awk -F '=' '{print $2}'`
+Version=${Version#*'"'}
+Version=${Version%'"'*}
+cp nodepm-tray.bin ./pack/usr/bin/nodepm-tray
+cat >./pack/DEBIAN/control << EOF
+Package: nodepm-tray
+Version: $Version
+Architecture: all
+Priority: optional
+Depends: nodepm
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: nodepm tray 
+EOF
+dpkg -b ./pack ./deb/nodepm-tray_"$Version"_all.deb

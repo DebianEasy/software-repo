@@ -1,0 +1,56 @@
+[2023-03-23T12:07:16.583442 174400] === CCACHE 4.2 STARTED =========================================
+[2023-03-23T12:07:16.583442 174400] Config: (default) absolute_paths_in_stderr = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) base_dir = 
+[2023-03-23T12:07:16.583442 174400] Config: (environment) cache_dir = /home/jydeng/.cache/Nuitka/ccache
+[2023-03-23T12:07:16.583442 174400] Config: (default) compiler = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) compiler_check = mtime
+[2023-03-23T12:07:16.583442 174400] Config: (default) compiler_type = auto
+[2023-03-23T12:07:16.583442 174400] Config: (default) compression = true
+[2023-03-23T12:07:16.583442 174400] Config: (default) compression_level = 0
+[2023-03-23T12:07:16.583442 174400] Config: (default) cpp_extension = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) debug = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) debug_dir = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) depend_mode = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) direct_mode = true
+[2023-03-23T12:07:16.583442 174400] Config: (default) disable = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) extra_files_to_hash = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) file_clone = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) hard_link = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) hash_dir = true
+[2023-03-23T12:07:16.583442 174400] Config: (default) ignore_headers_in_manifest = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) ignore_options = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) inode_cache = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) keep_comments_cpp = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) limit_multiple = 0.8
+[2023-03-23T12:07:16.583442 174400] Config: (environment) log_file = /home/jydeng/software/nodepm-tray/nodepm-tray.onefile-build/ccache-174382.txt
+[2023-03-23T12:07:16.583442 174400] Config: (default) max_files = 0
+[2023-03-23T12:07:16.583442 174400] Config: (default) max_size = 5.0G
+[2023-03-23T12:07:16.583442 174400] Config: (default) path = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) pch_external_checksum = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) prefix_command = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) prefix_command_cpp = 
+[2023-03-23T12:07:16.583442 174400] Config: (default) read_only = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) read_only_direct = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) recache = false
+[2023-03-23T12:07:16.583442 174400] Config: (default) run_second_cpp = true
+[2023-03-23T12:07:16.583442 174400] Config: (environment) sloppiness = include_file_mtime, include_file_ctime
+[2023-03-23T12:07:16.583442 174400] Config: (default) stats = true
+[2023-03-23T12:07:16.583442 174400] Config: (default) temporary_dir = /run/user/1000/ccache-tmp
+[2023-03-23T12:07:16.583442 174400] Config: (default) umask = 
+[2023-03-23T12:07:16.583496 174400] Command line: /usr/bin/ccache /usr/bin/gcc -o static_src/OnefileBootstrap.o -c -std=c11 -fvisibility=hidden -fwrapv -pipe -fpartial-inlining -ftrack-macro-expansion=0 -Wno-deprecated-declarations -fno-var-tracking -Wno-misleading-indentation -fcompare-debug-second -O3 -D__NUITKA_NO_ASSERT__ -D_NUITKA_ONEFILE_MODE -I. -I/home/jydeng/.local/lib/python3.9/site-packages/nuitka/build/include -I/home/jydeng/.local/lib/python3.9/site-packages/nuitka/build/static_src -I/home/jydeng/.local/lib/python3.9/site-packages/nuitka/build/inline_copy/zstd static_src/OnefileBootstrap.c
+[2023-03-23T12:07:16.583504 174400] Hostname: SPtest
+[2023-03-23T12:07:16.583507 174400] Working directory: /home/jydeng/software/nodepm-tray/nodepm-tray.onefile-build
+[2023-03-23T12:07:16.583510 174400] Compiler type: gcc
+[2023-03-23T12:07:16.583549 174400] Source file: static_src/OnefileBootstrap.c
+[2023-03-23T12:07:16.583553 174400] Object file: static_src/OnefileBootstrap.o
+[2023-03-23T12:07:16.583562 174400] Trying direct lookup
+[2023-03-23T12:07:16.583620 174400] Looking for result name in /home/jydeng/.cache/Nuitka/ccache/a/2/abi94fs47u9km1so4rkriqfsea3rsvgM
+[2023-03-23T12:07:16.587253 174400] Got result name from manifest
+[2023-03-23T12:07:16.587277 174400] Reading result /home/jydeng/.cache/Nuitka/ccache/9/5/2449n5ooot19u5i9hl0gu2aulk5ahhaR
+[2023-03-23T12:07:16.588147 174400] Reading embedded entry #0 .o (181992 bytes)
+[2023-03-23T12:07:16.588155 174400] Writing to static_src/OnefileBootstrap.o
+[2023-03-23T12:07:16.588358 174400] Succeeded getting cached result
+[2023-03-23T12:07:16.588365 174400] Result: cache hit (direct)
+[2023-03-23T12:07:16.588393 174400] Acquired lock /home/jydeng/.cache/Nuitka/ccache/9/5/stats.lock
+[2023-03-23T12:07:16.588472 174400] Releasing lock /home/jydeng/.cache/Nuitka/ccache/9/5/stats.lock
+[2023-03-23T12:07:16.588487 174400] Unlink /home/jydeng/.cache/Nuitka/ccache/9/5/stats.lock

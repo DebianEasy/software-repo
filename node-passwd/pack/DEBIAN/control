@@ -1,0 +1,6 @@
+Package: node-passwd
+Version: 0.2
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: node's password detect

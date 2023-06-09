@@ -1,0 +1,4 @@
+#!/bin/bash
+mkdir -p deb
+rm ./deb/*
+cp ./grub-btrfs*.deb ./deb

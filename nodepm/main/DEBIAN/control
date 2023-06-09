@@ -1,0 +1,6 @@
+Package: nodepm
+Version: 0.5.0
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: NOne-DEsktop Power Manager

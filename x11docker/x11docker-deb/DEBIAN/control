@@ -1,0 +1,11 @@
+Package: x11docker
+Version: 7.4.2-3
+Architecture: all
+Priority: optional
+Depends: bash
+Installed-Size: 450
+Sections: x11
+Recommends: nxagent, xserver-xephyr, xdotool, xauth, xinit, xclip, xutils, xserver-xorg, docker.io | podman
+Suggests: weston, xwayland
+Maintainer: Jy Deng <djy99811899@pku.edu.cn>
+Description: A tool to run GUI applications and desktops in Linux containers with backends like podman or docker. X11docker helps to avoid X security leaks and enhance container security. Software can be installed in a deployable image with a rudimentary Linux system inside. This can help to run or deploy software that is difficult to install on several systems due to dependency issues. It is possible to run outdated versions or latest development versions side by side. Files to work on can be shared between host and container.

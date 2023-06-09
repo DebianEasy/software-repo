@@ -1,0 +1,6 @@
+Package: blesh
+Version: 0.3.3
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: provide fish-like experience for bash

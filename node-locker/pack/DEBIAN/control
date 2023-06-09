@@ -1,0 +1,7 @@
+Package: node-locker
+Version: 0.1
+Architecture: all
+Priority: optional
+Depends: node-passwd
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: node's screen locker

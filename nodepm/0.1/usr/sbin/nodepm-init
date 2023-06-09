@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+Inhibit_List="default"
+PathEtc=/etc/nodepm
+DEBUG_MODE=${DEBUG_MODE:-0}
+BatteryDaemon=on
+LidDaemon=on
+TimerDaemon=on
+BacklightDaemon=on
+
+PATH=$PATH:`dirname ${BASH_SOURCE[0]}`
+
+function daemon_term(){
+	jobs -l
+	for pidline in `jobs -p`
+	do
+		kill $pidline
+	done
+	unset pidline
+	exit 2
+}
+
+trap "daemon_term" SIGINT SIGTERM
+[ -e $PathEtc/env.conf ] && source $PathEtc/env.conf
+[ `whoami` == "root" ] || {
+	echo "Error:   Need to run as root"
+	exit 0
+}
+if (echo $Inhibit_List |grep -iw "default">/dev/null)
+then
+	Inhibit_List="handle-power-key:handle-suspend-key:handle-hibernate-key:idle"
+	if [ $LidDaemon == "on" ]
+	then
+		Inhibit_List="$Inhibit_List":handle-lid-switch
+	fi
+elif (echo $Inhibit_List |grep -iw "all">/dev/null)
+then
+	Inhibit_List="handle-power-key:handle-suspend-key:handle-hibernate-key:handle-lid-switch:shutdown:sleep:idle"
+fi
+echo
+echo inhibit:
+Inhibit_Tmp=$Inhibit_List
+Inhibit_Tmp_Flag=0
+while [ $Inhibit_Tmp_Flag -eq 0 ]
+do
+	Inhibit_Tmp_Front=${Inhibit_Tmp%%:*}
+	Inhibit_Tmp=${Inhibit_Tmp#*:}
+	if [ $Inhibit_Tmp_Front == $Inhibit_Tmp ]
+	then
+		Inhibit_Tmp_Flag=1
+	fi
+	echo "    "$Inhibit_Tmp_Front
+done
+unset Inhibit_Tmp
+unset Inhibit_Tmp_Flag
+unset Inhibit_Tmp_Front
+echo
+echo daemon enabled:
+[ $BatteryDaemon == "on" ] && echo "    "battery
+[ $LidDaemon == "on" ] && echo "    "lid
+[ $BacklightDaemon == "on" ] && echo "    "backlight
+[ $TimerDaemon == "on" ] && echo "    "timer
+echo
+export NODEPM_INIT=1
+export DEBUG_MODE=$DEBUG_MODE
+systemd-inhibit --what=$Inhibit_List --who=nodepm-daemon --why="none-dekstop power manager" nodepm-daemon
+unset NODEPM_INIT
+unset DEBUG_MODE

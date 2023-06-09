@@ -1,0 +1,536 @@
+#!/usr/bin/env bash
+PathLid=/proc/acpi/button/lid/*/state
+PathEtc=/etc/nodepm
+PathRun=/run/nodepm
+Bat_Function=batmonitor_sys
+FreshTime=2
+Config_Mode=Double
+Backlight_Unit=0.075
+DEBUG_MODE=${DEBUG_MODE:-0}
+
+BatteryDaemon=on
+LidDaemon=on
+TimerDaemon=on
+BacklightDaemon=on
+
+function getlight_max(){
+    cat $GpuPath/max_brightness
+}
+
+function getlight(){
+    cat $GpuPath/brightness
+}
+
+function getlight_relative(){
+    tem1=`getlight`
+    tem2=`getlight_max`
+    tem=`echo "scale=2;$tem1/$tem2"|bc -l` 
+    echo $tem
+    unset tem1
+    unset tem2
+    unset tem
+}
+
+#change backlight value
+function setlight(){
+    tem=$1
+    tem0=`getlight_max`
+    if [[ $tem -gt $tem0 ]]
+    then
+        tem=$tem0
+    elif [[ $tem -lt 0 ]]
+    then
+        tem=0
+    fi
+    #echo test $tem
+    echo $tem  > $GpuPath/brightness
+    unset tem
+    unset tem0
+}
+
+#change backlight relatively
+function setlight_relative(){
+    tem0=`getlight_max`
+    tem=`echo "scale=1;$1 * $tem0"|bc -l`
+    tem=${tem%.*}
+    setlight $tem
+}
+
+function batmonitor_sys(){
+	unset BAT_TIME
+	AC_STAT=Offline
+	BAT_STAT=Discharging
+	for Line in `ls -d /sys/class/power_supply/AC*`
+	do
+		[ `cat "$Line"/online` -eq 1 ] && AC_STAT=Online
+	done
+	for Line in `ls -d /sys/class/power_supply/BAT*`
+	do
+		[ -e "$Line"/capacity ] && BAT_CAP=`cat "$Line"/capacity`
+		[ -e "$Line"/status ] && BAT_STAT=`cat "$Line"/status`
+	done
+	unset Line
+}
+
+function batmonitor_acpi(){
+	BAT_LINE=`acpi -b`
+	BAT_TEM=${BAT_LINE%'%'*}
+	BAT_CAP=${BAT_TEM##*' '}
+	BAT_TEM=${BAT_LINE##*','}
+	BAT_TIME=${BAT_TEM:0:9}
+	BAT_STAT=Discharging
+	echo $BAT_LINE | grep Charging && BAT_STAT=Charging
+	echo $BAT_LINE | grep Full && BAT_STAT=Full
+	acpi -a | grep on && AC_STAT=Online
+	acpi -a | grep off && AC_STAT=Offline
+	unset BAT_LINE
+	unset BAT_TEM
+}
+
+function batmonitor_other(){
+	unset BAT_TIME
+	unset BAT_CAP
+	unset AC_STAT
+	unset BAT_STAT
+	source $1
+}
+
+function INTERNAL_backlight_up(){
+	temLight=`getlight_relative`
+    AveLight=`echo "scale=2;$temLight + $Backlight_Unit"|bc -l`
+    backlight_daemon_set_avelight
+    unset temLight
+}
+
+function INTERNAL_backlight_down(){
+	temLight=`getlight_relative`
+    AveLight=`echo "scale=2;$temLight - $Backlight_Unit"|bc -l`
+    backlight_daemon_set_avelight
+    unset temLight
+}
+
+function INTERNAL_backlight_off(){
+	backlight_daemon_get_avelight
+	#echo $AveLight
+	#echo $Backlight_Unit
+	temflag=`bc -l<<<"$AveLight>$Backlight_Unit"`
+	#echo $temflag
+	#echo $Backlight_Saved
+	if [ $temflag -eq 1 ]
+	then
+		Backlight_SaveFlag=1
+		Backlight_Saved=$AveLight
+	fi
+	AveLight=0
+	backlight_daemon_set_avelight
+	unset temflag
+}
+
+function INTERNAL_backlight_wake(){
+	backlight_daemon_get_avelight
+	temflag=`bc -l<<<"$AveLight<$Backlight_Unit"`
+	if [ $temflag -eq 1 ]
+	then
+		AveLight=${Backlight_Saved:-0.5}
+		backlight_daemon_set_avelight
+		Backlight_SaveFlag=0
+	fi
+	unset temflag
+}
+
+function INTERNAL_user_run(){
+who |
+while read line
+do
+   if ( echo $line | grep tty > /dev/null )
+   then
+       TEM=$line
+       user=${TEM%%" "*}
+       TEM2=${TEM%*')'}
+       display=${TEM2##*'('}
+       uid=`id -u $user`
+       sudo -u $user DISPLAY=$display DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus "$@"
+	unset TEM
+	unset TEM2
+	unset display
+	unset uid
+	unset user
+   fi
+done
+}
+
+function battery_daemon_cmd_run(){
+	UpperLimit=100
+	LowerLimit=0
+	Once=yes
+    source $1/conf
+    BaseName=`basename $1`
+    if [[ $UpperLimit -ge $BAT_CAP && $LowerLimit -le $BAT_CAP ]]
+    then
+    	if [ $Once == "yes" ]
+    	then
+    		if [ $[Flag_Battery_"$BaseName"] == 0 ]
+			then
+				eval Flag_Battery_"$BaseName"=1
+				echo battery: $BAT_STAT $BAT_CAP, running exec
+				source $1/exec
+			fi
+    	else
+			echo battery: $BAT_STAT $BAT_CAP, running exec
+    		source $1/exec
+    	fi
+    else
+    	eval Flag_Battery_"$BaseName"=0
+    fi
+    unset BaseName
+    unset Once
+}
+
+function battery_daemon_cmd_check(){
+    for file in `ls $PathConfig/battery/* -d`
+    do
+    	[ -d $file ] && battery_daemon_cmd_run $file
+    done
+}
+
+function battery_daemon_init_check(){
+    for file in `ls $PathConfig/battery/* -d`
+    do
+    	[ -d $file ] && eval Flag_Battery_`basename $file`=0
+    done
+}
+
+function battery_daemon_cmd_off(){
+    #echo detect AC off
+    [ -f $PathConfig/battery/bat ] && source $PathConfig/battery/bat
+}
+
+function battery_daemon_cmd_on(){
+    #echo detect AC on
+    [ -f $PathConfig/battery/ac ] && source $PathConfig/battery/ac
+}
+
+function battery_daemon_select_config(){
+	if [ $Config_Mode == "One" ]
+	then
+		PathConfig="$PathEtc"/one
+	else
+		if [ $AC_STAT == "Online" ]
+		then
+			PathConfig="$PathEtc"/ac
+		else
+			PathConfig="$PathEtc"/bat
+		fi
+	fi
+}
+
+function timer_daemon_input_monitor(){
+    for line in `ls /dev/input/event*`
+    do
+        cat $line >>$PathRun/input_monitor &
+    done
+    for line in `ls /dev/input/mouse*`
+    do
+        cat $line >>$PathRun/input_monitor &
+    done
+    cat /dev/input/mice >>$PathRun/input_monitor &
+}
+
+function timer_daemon_cmd_run(){
+    unset Time
+    unset TimeLimit
+    Once=yes
+    source $1/conf
+    BaseName=`basename $1`
+	#echo $BaseName $[Flag_Timer_"$BaseName"]
+    [[ -z $TimeLimit ]] && TimeLimit=$Time
+    if [ $WaitTime -ge $TimeLimit ]
+    then
+    	if [ $Once == "yes" ]
+    	then
+    		if [ $[Flag_Timer_"$BaseName"] == 0 ]
+    		then
+    			eval Flag_Timer_"$BaseName"=1
+    			source $1/exec
+    			TimerFlag=1
+    			echo Wait time: $WaitTime, running exec
+    		fi
+    	else
+		echo Wait time: $WaitTime, running exec
+    		source $1/exec
+    		TimerFlag=1
+    	fi
+    else
+    	eval Flag_Timer_"$BaseName"=0
+    fi
+    unset Time
+    unset TimeLimit
+    unset Mode
+    unset BaseName
+    unset Once
+}
+
+function timer_daemon_cmd_check(){
+    for file in `ls $PathConfig/timer/* -d`
+    do
+    	[ -d $file ] && timer_daemon_cmd_run $file
+    done
+}
+
+function timer_daemon_init_check(){
+    for file in `ls $PathConfig/timer/* -d`
+    do
+    	[ -d $file ] && eval Flag_Timer_`basename $file`=0
+    done
+}
+
+function timer_daemon_delete_file(){
+	wcResult=0
+	wcResult_old=0
+	cat /dev/null > $PathRun/input_monitor
+}
+
+function lid_daemon_cmd_close(){
+    echo detect lid close
+    [ -f $PathConfig/lid/close ] && source $PathConfig/lid/close
+}
+
+function lid_daemon_cmd_open(){
+    echo detect lid open
+    [ -f $PathConfig/lid/open ] && source $PathConfig/lid/open
+}
+
+function backlight_daemon_get_avelight(){
+	if [ $GpuName == "all" ]
+	then
+		SumLight=0
+		Count=0
+		for GpuPath in `ls /sys/class/backlight/* -d`
+		do
+			if [ -d $GpuPath ]
+			then
+				Tem=`getlight_relative`
+				SumLight=$(bc -l <<< $SumLight+$Tem)
+				Count=$((Count+1))
+			fi
+		done
+		AveLight=$(bc -l <<< $SumLight/$Count)
+		unset Count
+		unset SumLight
+	else
+		GpuPath='/sys/class/backlight/$GpuName'
+		AveLight=`getlight_relative`
+	fi
+}
+
+function backlight_daemon_set_avelight(){
+	if [ $GpuName == "all" ]
+	then
+		for GpuPath in `ls /sys/class/backlight/* -d`
+		do
+			if [ -d $GpuPath ]
+			then
+				setlight_relative $AveLight
+			fi
+		done
+	else
+		GpuPath='/sys/class/backlight/$GpuName'
+		setlight_relative $AveLight
+	fi
+}
+
+function backlight_daemon_listen_fifo(){
+	while [ $Listen_Fifo_Flag -eq 1 ]
+	do
+		if [ $Listen_Fifo_Flag -eq 1 ]
+		then
+			temLine=`cat $PathRun/backlight_fifo`
+			echo backlight fifo updated 
+		else
+			exit 1
+		fi
+		if [ $temLine == "up" ]
+		then
+			INTERNAL_backlight_up
+		elif [ $temLine == "down" ]
+		then
+			INTERNAL_backlight_down
+		else
+			AveLight=$temLine
+			backlight_daemon_set_avelight
+		fi
+		echo $AveLight > $PathRun/backlight_current
+		unset temLine
+	done
+}
+
+function daemon_term(){
+	jobs -l
+	Listen_Fifo_Flag=0
+	rm -rf $PathRun
+	for pidline in `jobs -p`
+	do
+		kill $pidline
+	done
+	unset pidline
+	exit 2
+}
+
+#main
+[ -z $NODEPM_INIT ] && echo "Warning: Please do not run nodepm-daemon directly but run nodepm-init instead"
+[ `whoami` == "root" ] || {
+	echo "Error:   Need to run as root"
+	exit 1
+}
+trap "daemon_term" SIGINT SIGTERM
+[ -e $PathEtc/env.conf ] && source $PathEtc/env.conf
+[ -e $PathRun ] || mkdir -p $PathRun
+# battery
+if [ $BatteryDaemon == "on" ]
+then
+	$Bat_Function
+	battery_daemon_select_config
+	[ -e $PathConfig/battery/conf ] && source $PathConfig/battery/conf
+	battery_daemon_init_check
+	BAT_STAT_OLD=$BAT_STAT
+	AC_STAT_OLD=$AC_STAT
+	[ -e $PathRun/battery ] && rm -rf $PathRun/battery
+	[ -e $PathRun/ac ] && rm -rf $PathRun/ac
+	[ -e $PathRun/bat ] && rm -rf $PathRun/bat
+	touch $PathRun/battery
+	touch $PathRun/ac
+	ln -s $PathRun/battery $PathRun/bat
+else
+	PathConfig="$PathEtc"/one
+fi
+# lid
+if [ $LidDaemon == "on" ]
+then
+	[ -f $PathConfig/lid/conf ] && source $PathConfig/lid/conf
+	[ -e $PathRun/lid ] && rm -rf $PathRun/lid
+	ln -s $PathLid $PathRun/lid
+	StateLid_old=0
+	# 1 for close, 0 for open , 2 for unknown
+fi
+# timer
+if [ $TimerDaemon == "on" ]
+then
+	[ -e $PathConfig/timer/conf ] && source $PathConfig/timer/conf
+	[ -e $PathRun/input_monitor_mode ] && rm -rf $PathRun/input_monitor_mode
+	[ -e $PathRun/input_monitor ] && rm -rf $PathRun/input_monitor
+	[ -e $PathRun/input_monitor_wait_time ] && rm -rf $PathRun/input_monitor_wait_time
+	echo 1 > $PathRun/input_monitor_mode
+	touch $PathRun/input_monitor_wait_time
+	chmod 644 $PathRun/input_monitor
+	chmod 666 $PathRun/input_monitor_mode
+	chmod 644 $PathRun/input_monitor
+	wcResult=0
+	wcResult_old=0
+	WaitTime=0
+	TimerFlag=0
+	timer_daemon_init_check
+	timer_daemon_input_monitor
+fi
+# backlight
+if [ $BacklightDaemon == "on" ]
+then
+	Listen_Fifo_Flag=1
+	Backlight_SaveFlag=0
+	Gpu_Backlight=all
+	Gpu_Mode=0
+	[ -e $PathConfig/backlight/conf ] && source $PathConfig/backlight/conf
+	if [ $Gpu_Mode == "all" ]
+	then
+		GpuName=all
+	else
+		GpuName=$Gpu_Backlight
+	fi
+	[ -e $PathRun/backlight_fifo ] && rm -rf $PathRun/backlight_fifo
+	mkfifo $PathRun/backlight_fifo
+	chmod 666 $PathRun/backlight_fifo
+	[ -e $PathRun/backlight_current ] && rm -rf $PathRun/backlight_current
+	touch $PathRun/backlight_current
+	chmod 644 $PathRun/backlight_current
+	backlight_daemon_get_avelight
+	backlight_daemon_set_avelight
+	backlight_daemon_listen_fifo &
+fi
+# loop
+while true
+do
+# battery
+	if [ $BatteryDaemon == "on" ]
+	then
+		$Bat_Function
+		echo $BAT_STAT $BAT_CAP > $PathRun/battery
+		echo $AC_STAT > $PathRun/ac
+		[ $Config_Mode == "One" ] || battery_daemon_select_config
+		if [[ $AC_STAT == "Online" && $AC_STAT_OLD == "Offline" ]]
+		then
+			echo "AC online"
+			battery_daemon_cmd_on
+		elif [[ $AC_STAT == "Offline" && $AC_STAT_OLD == "Online" ]]
+		then
+			echo "AC offline"
+			battery_daemon_cmd_off
+		fi
+		BAT_STAT_OLD=$BAT_STAT
+		AC_STAT_OLD=$AC_STAT
+		export Battery_Capacity=$BAT_CAP
+		battery_daemon_cmd_check
+		[ $DEBUG_MODE -eq 1 ] && echo power status: ac $AC_STAT battery $BAT_CAP
+	fi
+# timer
+	if [ $TimerDaemon == "on" ]
+	then
+    	wcResult=`wc -c $PathRun/input_monitor`
+    	wcResult=${wcResult%' '*}
+    	if [ `cat $PathRun/input_monitor_mode` -eq 1 ]
+    	then
+    		#echo $wcResult $wcResult_old
+    	    if [ $wcResult_old -eq $wcResult ]
+    	    then
+		      	WaitTime=$((WaitTime+FreshTime))
+		    else
+		       	WaitTime=0
+		       	if [ $TimerFlag -eq 1 ]
+		       	then
+		       		source "$PathConfig"/timer/wakeup
+		       		TimerFlag=0
+		       	fi
+			fi
+			timer_daemon_cmd_check
+			wcResult_old=$wcResult
+			timer_daemon_delete_file
+		else
+			WaitTime=0
+			timer_daemon_delete_file
+		fi
+		[ $WaitTime -eq 0 ] && timer_daemon_init_check
+		echo $WaitTime > $PathRun/input_monitor_wait_time
+		[ $DEBUG_MODE -eq 1 ] && echo waittime: $WaitTime
+	fi
+# lid
+	if [ $LidDaemon == "on" ]
+	then
+		if [ -e $PathLid ]
+    	then
+    	    cat $PathLid | grep open > /dev/null
+    	    StateLid=$?
+    	# 1 for close, 0 for open , 2 for unknown
+    	else
+    	    StateLid=2
+    	    echo "cannot detect state f lid" >&2
+    	fi
+    	[[ $StateLid -eq 1 && $StateLid_old -eq 0 ]] && lid_daemon_cmd_close
+    	[[ $StateLid -eq 0 && $StateLid_old -eq 1 ]] && lid_daemon_cmd_open
+    	StateLid_old=$StateLid
+    fi
+# backlight
+	backlight_daemon_get_avelight
+	echo $AveLight > $PathRun/backlight_current
+#
+	[ $DEBUG_MODE -eq 1 ] && echo Config in use: $PathConfig
+#
+	sleep $FreshTime
+done

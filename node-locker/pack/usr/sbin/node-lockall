@@ -1,0 +1,89 @@
+#!/usr/bin/env  bash
+Version=0.1
+PathRun=/run/node-lock
+PathEtc=/etc/node-lock
+PATH=$PATH:`dirname ${BASH_SOURCE[0]}`
+
+function user_run(){
+	for dir in `ls /run/user/* -d`
+	do
+		uid=${dir##*'/'}
+		user=$(id -nu $uid)
+		if ( which systemctl >/dev/null )
+		then
+			display=$(sudo -u $user XDG_RUNTIME_DIR=$dir DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus systemctl --user show-environment|grep -w  DISPLAY|awk -F '=' '{print $2}')
+		else
+			display=$(LC_ALL=C who -a|grep -wF $user|head -n 1|grep  '('|awk -F '(' '{print $2}'|awk -F ')' '{print $1}')
+		fi
+		sudo -i -u $user DISPLAY=$display DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus "$@" &
+	done
+}
+
+function run_daemon(){
+	[ -e $PathRun ] && rm -rf $PathRun
+	mkfifo $PathRun
+	chmod 644 $PathRun
+	while true
+	do
+		ARGV=`cat $PathRun`
+		user_run node-locker $ARGV
+	done
+}
+
+function send_message(){
+	if [ -e $PathRun ]
+	then
+		echo $* > $PathRun
+	else
+		echo daemon not found!
+	fi
+}
+
+function echohelp(){
+cat << EOF
+NODE screen locker for root
+Do not support wayland
+
+Version: $Version
+
+Usage: $0 Arguments [Options]
+
+Arguments:
+	daemon			start daemon
+	no-daemon		lock screen for all users at once without using daemon
+	send			lock screen for all users by sending message to daemon
+	help			show this help page
+
+Options ( only valid for Argument 'no-daemon' and 'send' ):
+	-z | --zenity		Lock screen on current dsiplay with zenity
+	-g | --gxmessage	Lock screen on current dsiplay with gxmessage
+	-y | --yad		Lock screen on current dsiplay with yad
+	-c | --clean		clean locker flag, use it if screen locker not works
+
+Also see 'node-locker --help'
+EOF
+}
+
+#echo $PATH
+if [ `whoami` != 'root' ]
+then
+	echo "need root privilege"
+	exit 1
+fi
+Line=`echo $*|awk -F "$1" '{print $2}'`
+case $1 in
+	"daemon")
+	run_daemon $Line
+	;;
+	"no-daemon")
+	user_run node-locker $Line
+	;;
+	"send")
+	send_message $Line
+	;;
+	*)
+	echohelp
+	;;
+esac
+
+

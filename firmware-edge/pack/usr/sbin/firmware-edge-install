@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+cat << EOF
+Are you sure to update firmware to edge version from kernel.org?
+This cannot be undo!
+Type y to continue, n to cancel
+EOF
+REPLY='n'
+read
+if [ $REPLY == 'y' ]
+then
+    if [ -e /var/linux-firmware ]
+	then
+	mkdir -p /lib/firmware
+	cp -rf /var/linux-firmware/* /lib/firmware/
+    	echo Firmware installed.
+	else
+	echo Firmware not downloaded. Please use firmware-edge-update first
+    fi
+fi

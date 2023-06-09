@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+PathRun="/run/nodepm"
+Gpu_Backlight=all
+Mode=0
+Backlight_Move=0
+
+function echohelp(){
+	echo "Usage:"
+	echo "$0 up"
+	echo "		to turn backlight up"
+	echo "$0 down"
+	echo "		to turn backlight down"
+	echo "$0 set <brightness>"
+	echo "		to set backlihgt brightness"
+	echo "		<brightness> should be between 0 and 1"
+	echo "----------------------------"
+	echo "Need to run nodepm daemon"
+	exit 2
+}
+
+if [ -e "$PathRun/backlight_fifo" ]
+then
+	tem1=$1
+	Para1=${tem1:-"None"}
+	tem2=$2
+	Para2=${tem2:-"None"}
+	unset tem1
+	unset tem2
+	if [ "$Para1" == "up" ]
+	then
+		echo "up" > $PathRun/backlight_fifo
+		Backlight_Move=up
+	elif [ "$Para1" == "down" ]
+	then
+		echo "down" > $PathRun/backlight_fifo
+		Backlight_Move=down
+	elif [ "$Para1" == "set" ]
+	then
+		if [ "$Para2" == "None" ]
+		then
+			echohelp
+		else
+			echo $Para2 > $PathRun/backlight_fifo
+			Backlight_Move=set
+		fi
+	else
+		echohelp
+	fi
+	AveLight=`cat $PathRun/backlight_current`
+	Light=`echo "100*$AveLight/1" | bc`
+	[ $Light -gt 100 ] && Light=100
+	[ $Light -lt 0 ] && Light=0
+	Light="$Light"'%'
+	notify-send "Brightness $Backlight_Move: $Light"
+	unset Para1
+	unset Para2
+else
+	echo "Cannot find npdepm daemon !"
+fi
+	

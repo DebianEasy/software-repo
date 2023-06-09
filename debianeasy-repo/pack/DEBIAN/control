@@ -1,0 +1,6 @@
+Package: debianeasy-repo
+Version: 0.2
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: provide DEbianEasy repository

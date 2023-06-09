@@ -1,0 +1,1 @@
+deb [signed-by=/usr/share/keyrings/DebianEasy.gpg] http://DebianEasyRepo.github.io/bookworm bookworm main

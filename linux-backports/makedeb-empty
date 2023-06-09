@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+Maintainer='CicadaSeventeen <CicadaSeventeen@github>'
+Version=0.0.0-0
+mkdir -p deb
+rm -rf ./image
+rm -rf ./headers
+rm -rf ./backports
+rm -f ./deb/*
+mkdir -p headers/DEBIAN
+mkdir -p headers/usr/share/
+mkdir -p image/DEBIAN
+mkdir -p image/usr/share/
+cat > ./image/DEBIAN/control << EOF
+Package: linux-image-backports-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: backports Linux kernel image of Debian Stable for amd64
+EOF
+cat > ./headers/DEBIAN/control << EOF
+Package: linux-headers-backports-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: backports Linux kernel headers of Debian Stable for amd64
+EOF
+mkdir -p backports/DEBIAN
+mkdir -p backports/usr/share/
+echo linux-headers-amd64_"$Version"_amd64 > ./headers/usr/share/linux-headers-backports-amd64_"$Version"_amd64
+echo linux-image-amd64_"$Version"_amd64 > ./image/usr/share/linux-image-backports-amd64_"$Version"_amd64
+echo linux-amd64_"$Version"_amd64 > ./backports/usr/share/linux-backports-amd64_"$Version"_amd64
+dpkg -b ./headers ./deb/linux-headers-backports-amd64_"$Version"_amd64.deb
+dpkg -b ./image ./deb/linux-image-backports-amd64_"$Version"_amd64.deb
+cat > ./backports/DEBIAN/control << EOF
+Package: linux-backports-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Depends: linux-image-backports-amd64, linux-headers-backports-amd64
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: backports Linux kernel of Debian Stable for amd64
+EOF
+dpkg -b ./backports ./deb/linux-backports-amd64_"$Version"_amd64.deb
+rm -rf ./image
+rm -rf ./headers
+rm -rf ./backports

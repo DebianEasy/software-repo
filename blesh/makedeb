@@ -1,0 +1,13 @@
+#!/bin/bash
+mkdir -p deb
+rm deb/*
+Version=0.3.3
+cat >./ble-0.3.3/DEBIAN/control << EOF
+Package: blesh
+Version: $Version
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: provide fish-like experience for bash
+EOF
+dpkg -b ./ble-0.3.3 deb/blesh_"$Version"_all.deb

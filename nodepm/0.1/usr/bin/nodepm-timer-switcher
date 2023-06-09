@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+PathRun="/run/nodepm"
+
+function echohelp(){
+	echo "Usage:"
+	echo "$0 on"
+	echo "		to turn on input timing monitor, or you can say to stop display mode""
+	echo "$0 off"
+	echo "		to turn off input timing monitor, or you can say to turn on display mode"
+	echo "$0 switch"
+	echo "		to switch between on and off"
+	echo "$0 status"
+	echo "		to show monitor mode status"
+	echo "----------------------------"
+	echo "Need to run nodepm daemon"
+}
+
+[ -e "$PathRun/input_monitor_mode" ] || {
+	echo "Cannot find nodepm daemon"
+	exit 0
+}
+tmp=$1
+tem=${tmp:-0}
+if [ $tem == "on" ]
+then
+	echo 1 > $PathRun/input_monitor_mode
+elif [ $tem == "off" ]
+then
+	echo 0 > $PathRun/input_monitor_mode
+elif [ $tem == "switch" ]
+then
+	Flag=`cat $PathRun/input_monitor_mode`
+	Flag=$((1-$Flag))
+	echo $Flag > $PathRun/input_monitor_mode
+	unset Flag
+elif [ $tem == "status" ]
+then
+	Monitor_Mode=on
+	[ `cat $PathRun/input_monitor_mode` -eq 0 ] && Monitor_Mode=off
+	echo "Status:	$Monitor_Mode"
+else
+	echohelp
+fi
+unset tmp
+unset tem
+unset Monitor_Mode

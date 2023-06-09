@@ -1,0 +1,14 @@
+#!/bin/bash
+Version=`cat ./pack/usr/bin/node-locker |grep 'Version='|awk -F '=' '{print $2}'`
+mkdir -p deb
+rm deb/*
+cat >./pack/DEBIAN/control << EOF
+Package: node-locker
+Version: $Version
+Architecture: all
+Priority: optional
+Depends: node-passwd
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: node's screen locker
+EOF
+dpkg -b ./pack deb/node-locker_"$Version"_all.deb

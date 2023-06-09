@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+Maintainer='CicadaSeventeen <CicadaSeventeen@github>'
+mkdir -p deb
+rm -rf ./image
+rm -rf ./headers
+rm -rf ./backports
+rm -f ./deb/*
+apt download linux-image-amd64 -t bookworm-backports
+apt download linux-headers-amd64 -t bookworm-backports
+dpkg-deb -R ./linux-image-amd64* ./image
+dpkg-deb -R ./linux-headers-amd64* ./headers
+Version=`cat ./image/DEBIAN/control|grep Version`
+Version=${Version#*' '}
+rm ./*/DEBIAN/pre*
+rm ./*/DEBIAN/post*
+Headers_Packname=`cat ./headers/DEBIAN/control|grep Depends|awk -F ' ' '{print $2}'`
+Image_Packname=`cat ./image/DEBIAN/control|grep Depends|awk -F ' ' '{print $2}'`
+rm -rf ./headers/usr/share
+rm -rf ./image/usr/share
+mkdir -p backports/DEBIAN
+mkdir -p backports/usr/share
+echo linux-headers-amd64_"$Version"_amd64 > ./headers/usr/share/linux-headers-backports-amd64_"$Version"_amd64
+echo linux-image-amd64_"$Version"_amd64 > ./image/usr/share/linux-image-backports-amd64_"$Version"_amd64
+echo linux-amd64_"$Version"_amd64 > ./backports/usr/share/linux-backports-amd64_"$Version"_amd64
+apt download $Headers_Packname -t bookworm-backports
+apt download $Image_Packname -t bookworm-backports
+mv "$Headers_Packname"*.deb ./deb/
+mv "$Image_Packname"*.deb ./deb/
+sed -i "s/Debian\sKernel\sTeam\s<debian-kernel@lists.debian.org>/$Maintainer/g" ./headers/DEBIAN/control
+sed -i 's/linux-headers-amd64/linux-headers-backports-amd64/g'  ./headers/DEBIAN/control
+sed -i "s/Debian\sKernel\sTeam\s<debian-kernel@lists.debian.org>/$Maintainer/g" ./image/DEBIAN/control
+sed -i 's/linux-image-amd64/linux-image-backports-amd64/g'  ./image/DEBIAN/control
+dpkg -b ./headers ./deb/linux-headers-backports-amd64_"$Version"_amd64.deb
+dpkg -b ./image ./deb/linux-image-backports-amd64_"$Version"_amd64.deb
+cat > ./backports/DEBIAN/control << EOF
+Package: linux-backports-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Depends: linux-image-backports-amd64, linux-headers-backports-amd64
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: backports Linux kernel of Debian Stable for amd64
+EOF
+dpkg -b ./backports ./deb/linux-backports-amd64_"$Version"_amd64.deb
+mkdir -p deb
+rm ./linux-image-amd64*
+rm ./linux-headers-amd64*
+rm -rf ./image
+rm -rf ./headers
+rm -rf ./backports

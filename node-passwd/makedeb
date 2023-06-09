@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+mkdir -p deb
+rm deb/*
+gcc detect-passwd.c
+mv a.out node-passwd
+cp node-passwd ./pack/usr/bin
+chmod 6755 ./pack/usr/bin/node-passwd
+#
+Version=`cat detect-passwd.c |grep '//version'|awk -F ' ' '{print $2}'`
+cat >./pack/DEBIAN/control << EOF
+Package: node-passwd
+Version: $Version
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: node's password detect
+EOF
+dpkg -b ./pack ./deb/node-passwd_"$Version"_amd64.deb

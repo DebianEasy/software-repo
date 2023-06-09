@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+Maintainer='CicadaSeventeen <CicadaSeventeen@github>'
+Version=`ls linux-headers* |awk -F '_' '{print $2}'`
+Headers_Packname=`ls linux-headers*`
+Image_Packname=`ls linux-image*`
+mkdir -p deb
+rm -rf ./image
+rm -rf ./headers
+rm -rf ./edge
+rm -f ./deb/*
+mkdir -p headers/DEBIAN
+mkdir -p headers/usr/share
+mkdir -p image/DEBIAN
+mkdir -p image/usr/share
+cat > ./image/DEBIAN/control << EOF
+Package: linux-image-edge-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Depends: ${Image_Packname%%'_'*}
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: edge Linux kernel image of Debian Stable for amd64
+EOF
+cat > ./headers/DEBIAN/control << EOF
+Package: linux-headers-edge-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Depends: ${Headers_Packname%%'_'*}
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: edge Linux kernel headers of Debian Stable for amd64
+EOF
+mkdir -p edge/DEBIAN
+mkdir -p edge/usr/share
+echo linux-headers-amd64_"$Version"_amd64 > ./headers/usr/share/linux-headers-edge-amd64_"$Version"_amd64
+echo linux-image-amd64_"$Version"_amd64 > ./image/usr/share/linux-image-edge-amd64_"$Version"_amd64
+echo linux-amd64_"$Version"_amd64 > ./edge/usr/share/linux-edge-amd64_"$Version"_amd64
+dpkg -b ./headers ./deb/linux-headers-edge-amd64_"$Version"_amd64.deb
+dpkg -b ./image ./deb/linux-image-edge-amd64_"$Version"_amd64.deb
+cat > ./edge/DEBIAN/control << EOF
+Package: linux-edge-amd64
+Version: $Version
+Architecture: amd64
+Priority: optional
+Depends: linux-image-edge-amd64, linux-headers-edge-amd64
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: edge Linux kernel of Debian Stable for amd64
+EOF
+dpkg -b ./edge ./deb/linux-edge-amd64_"$Version"_amd64.deb
+cp linux*.deb ./deb/
+rm -rf ./image
+rm -rf ./headers
+rm -rf ./edge
+

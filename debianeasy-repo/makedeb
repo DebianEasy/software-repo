@@ -1,0 +1,13 @@
+#!/bin/bash
+mkdir -p deb
+rm deb/*
+Version=0.2
+cat >./pack/DEBIAN/control << EOF
+Package: debianeasy-repo
+Version: $Version
+Architecture: amd64
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: provide DEbianEasy repository
+EOF
+dpkg -b ./pack deb/debianeasy-repo_"$Version"_amd64.deb

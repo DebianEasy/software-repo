@@ -1,0 +1,25 @@
+#!/bin/bash
+mkdir -p deb
+rm deb/*
+Version=`cat ./main/usr/bin/nodepm |grep 'Version='|awk -F '=' '{print $2}'`
+cat >./main/DEBIAN/control << EOF
+Package: nodepm
+Version: $Version
+Architecture: all
+Priority: optional
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: NOne-DEsktop Power Manager
+EOF
+dpkg -b ./main deb/nodepm_"$Version"_all.deb
+#
+Version=`cat ./user/usr/bin/nodepm-user |grep 'Version='|awk -F '=' '{print $2}'`
+cat >./user/DEBIAN/control << EOF
+Package: nodepm-user
+Version: $Version
+Architecture: all
+Priority: optional
+Depends: nodepm
+Maintainer: CicadaSeventeen <https://github.com/CicadaSeventeen>
+Description: nodepm non-root program
+EOF
+dpkg -b ./user deb/nodepm-user_"$Version"_all.deb

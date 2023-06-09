@@ -1,0 +1,14 @@
+#!/bin/bash
+rm ./deb/*
+for dir in `ls`
+do
+	[ -d $dir ] && {
+		cd $dir
+		[ -e ./makedeb ] && {
+			#rm deb/*
+			bash makedeb
+			cp deb/* ../deb/
+		}
+		cd ..
+	}
+done
